@@ -1,4 +1,7 @@
 class UsersController < ApplicationController
+  require 'sendgrid-ruby'
+  include SendGrid
+
   before_action :set_user, only: %i[ show edit update destroy ]
 
   # GET /users or /users.json
@@ -25,6 +28,7 @@ class UsersController < ApplicationController
 
     respond_to do |format|
       if @user.save
+        send_email
         format.html { redirect_to @user, notice: "User was successfully created." }
         format.json { render :show, status: :created, location: @user }
       else
@@ -65,5 +69,19 @@ class UsersController < ApplicationController
     # Only allow a list of trusted parameters through.
     def user_params
       params.require(:user).permit(:name, :email)
+    end
+    
+    def send_email
+      from = Email.new(email: 'test@example.com')
+      to = Email.new(email: 'mathiasbarreto.dev@gmail.com')
+      subject = 'Sending with SendGrid is Fun'
+      content = Content.new(type: 'text/plain', value: 'and easy to do anywhere, even with Ruby')
+      mail = Mail.new(from, subject, to, content)
+  
+      sg = SendGrid::API.new(api_key: ENV['SENDGRID_API_KEY'])
+      response = sg.client.mail._('send').post(request_body: mail.to_json)
+      puts response.status_code
+      puts response.body
+      puts response.headers
     end
 end
